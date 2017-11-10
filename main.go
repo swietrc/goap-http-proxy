@@ -16,26 +16,22 @@ package main
 
 import (
 	"log"
-	"os"
-//	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/dustin/go-coap"
 	"github.com/gorilla/mux"
 )
 
-func getTemperature() []byte {
+func getResource(resource string) []byte {
 	req := coap.Message{
 		Type:      coap.Confirmable,
 		Code:      coap.GET,
 		MessageID: 12345,
-		Payload:   []byte("hello, world!"),
+		Payload:   []byte ("Hello, world"),
 	}
 
-	path := "/temperature"
-	if len(os.Args) > 1 {
-		path = os.Args[1]
-	}
+	path := "/" + resource
 
 	req.SetOption(coap.ETag, "weetag")
 	req.SetOption(coap.MaxAge, 3)
@@ -51,26 +47,28 @@ func getTemperature() []byte {
 		log.Fatalf("Error sending request: %v", err)
 	}
 
-
 	return rv.Payload
-
 }
 
-func temperatureHandler(w http.ResponseWriter, r *http.Request) {
-	pl := getTemperature()
-	log.Printf("Temperature: %s\n", string(pl))
+func proxyHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	log.Printf("%s %s\n", r.Method, r.URL)
+	pl := getResource(vars["resource"])
+
 
 	w.Header().Set("Content-Type", "text/html")
 	w.WriteHeader(http.StatusOK)
-
 	w.Write([]byte(string(pl)));
+	log.Printf("\t-> Respond %s\n", string(pl))
 }
 
 func main() {
+	// declare new multiplexer
 	r := mux.NewRouter()
 	// Routes consist of a path and a handler function.
-	r.HandleFunc("/", temperatureHandler)
+	r.HandleFunc("/proxy/{resource}", proxyHandler)
 
+	// Pass multiplexer to go stdlib http server
 	http.Handle("/", r)
 
 	log.Fatal(http.ListenAndServe(":8080", nil))
