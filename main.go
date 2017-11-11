@@ -17,7 +17,6 @@ package main
 import (
 	"log"
 	"net/http"
-	"os"
 
 	"github.com/dustin/go-coap"
 	"github.com/gorilla/mux"
